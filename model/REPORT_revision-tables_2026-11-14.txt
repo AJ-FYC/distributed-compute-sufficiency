@@ -1,0 +1,110 @@
+DISTRIBUTED COMPUTE SUFFICIENCY -- tables re-issued for the revision (2026-11-14)
+
+A. Crossing years, two comparators (conservative / moderate / optimistic)
+   era-normalized = the target is restated on each year's hardware (as the draft prints it);
+   physical       = the pool's hardware improves 1.35x per year, the target does not.
+   10^25 FLOP in 90 days                    members at year-0 hardware   185.7K /   76.6K /   59.4K
+                                            era-normalized   3.73 /  1.92 /  1.43    physical   2.70 /  1.50 /  1.15
+   7.2e23 FLOP (Llama-3-8B-class budget)    members at year-0 hardware    13.4K /    5.5K /    4.3K
+                                            era-normalized   0.37 /  0.00 /  0.00    physical   0.27 /  0.00 /  0.00
+   fixed 2,000 H100 cluster                 members at year-0 hardware   114.2K /   47.1K /   36.6K
+                                            era-normalized   3.11 /  1.46 /  1.04    physical   2.25 /  1.14 /  0.84
+   3.8e25 FLOP (Llama 3 405B budget)        members at year-0 hardware   705.6K /  291.1K /  225.8K
+                                            era-normalized   7.46 /  3.18 /  2.51    physical   3.93 /  2.48 /  2.02
+   fixed 16,384 H100 cluster                members at year-0 hardware   935.9K /  386.1K /  299.4K
+                                            era-normalized   9.49 /  3.45 /  2.73    physical   4.19 /  2.69 /  2.20
+
+B. Pool total, one 90-day period at year 5 (FLOP): era-normalized (draft) and physical (x 1.35^5 = 4.484)
+   conservative  2.69e+25   physical 1.21e+26   (physical / 3.8e25 = 3.2x)
+   moderate      2.61e+26   physical 1.17e+27   (physical / 3.8e25 = 30.8x)
+   optimistic    8.42e+26   physical 3.77e+27   (physical / 3.8e25 = 99.3x)
+
+C. Replica efficiency: what m replicas are worth in single-run replicas
+   local exponent between the two single-model points of ref [3]: 0.0172
+   replicas   law q=m^-0.23   effective (law)   experiment [3]: effective (iid / non-iid)   q (iid / non-iid)
+        2      0.851            1.7           
+        4      0.725            2.9            3.84 /  4.12                         0.960 / 1.030
+        8      0.617            4.9            4.75 /  5.17                         0.594 / 0.647
+       16      0.526            8.4            5.17 /  6.06                         0.323 / 0.379
+       20      0.499           10.0           
+       64      0.381           24.4            5.72 /  5.64                         0.089 / 0.088
+      100      0.344           34.4           
+     1000      0.201          201.4           
+
+   Single-run usable compute, 90 days, FLOP (cons / mod / opt): no quality factor | with the law's q(m)
+   replicas x devices   members   no factor                          with q(m)                          days to 7.2e23 | 1e25 (mod, with q)
+       8 x 1               8    4.8e+20 / 1.1e+21 / 1.4e+21      3.0e+20 / 6.8e+20 / 8.5e+20          95,501 |    1,326,406
+      16 x 1              16    9.6e+20 / 2.2e+21 / 2.7e+21      5.0e+20 / 1.2e+21 / 1.4e+21          56,081 |      778,907
+      20 x 1              20    1.2e+21 / 2.7e+21 / 3.4e+21      6.0e+20 / 1.4e+21 / 1.7e+21          47,249 |      656,234
+      64 x 1              64    3.8e+21 / 8.8e+21 / 1.1e+22      1.5e+21 / 3.4e+21 / 4.2e+21          19,339 |      268,598
+     100 x 1             100    6.0e+21 / 1.4e+22 / 1.7e+22      2.1e+21 / 4.7e+21 / 5.9e+21          13,727 |      190,656
+    1000 x 1            1000    6.0e+22 / 1.4e+23 / 1.7e+23      1.2e+22 / 2.8e+22 / 3.5e+22           2,342 |       32,527
+     100 x 8             800    4.8e+22 / 1.1e+23 / 1.4e+23      1.6e+22 / 3.8e+22 / 4.7e+22           1,716 |       23,832
+    1000 x 8            8000    4.8e+23 / 1.1e+24 / 1.4e+24      9.6e+22 / 2.2e+23 / 2.8e+23             293 |        4,066
+   With the experiment's plateau (about 5.7 effective replicas at 16-64, 150M model), moderate, single devices:
+     any m from 16 to 64: about 7.8e+20 FLOP per 90 days
+
+D. Continued training in one 90-day run (moderate): tokens processed, and their single-run equivalent with q(m)
+       8 x 1   3B model: 6.11e+10 processed, 3.77e+10 equivalent   5B model: 3.66e+10 processed, 2.26e+10 equivalent
+      20 x 1   3B model: 1.53e+11 processed, 7.62e+10 equivalent   5B model: 9.16e+10 processed, 4.57e+10 equivalent
+      64 x 1   3B model: 4.89e+11 processed, 1.86e+11 equivalent   5B model: 2.93e+11 processed, 1.12e+11 equivalent
+     100 x 1   3B model: 7.63e+11 processed, 2.62e+11 equivalent   5B model: 4.58e+11 processed, 1.57e+11 equivalent
+    1000 x 1   3B model: 7.63e+12 processed, 1.54e+12 equivalent   5B model: 4.58e+12 processed, 9.22e+11 equivalent
+   From-scratch budgets: 20 tokens per parameter -> 3B: 1.08e+21 FLOP; 5B: 3e+21 FLOP.  The draft's 15-30T-token target -> 3B on 15T: 2.7e+23; 5B on 30T: 9e+23
+
+E. Measured consumer utilization (0.242 and 0.186, ref [61]) in place of 0.38; and the current-generation chip ratio (x 1.794)
+   scenario        eta_local   e_member (TFLOPS)   R_eq    members = 16,384 H100   members for 1e25/90d   era yr  physical yr   | R_eq at current chips
+   conservative    0.380        6.93              57.1          936K               186K          9.49     4.19         |  102.5
+   moderate        0.380       16.79              23.6          386K                77K          3.45     2.69         |   42.3
+   optimistic      0.380       21.65              18.3          299K                59K          2.73     2.20         |   32.8
+   conservative    0.242        4.41              89.7         1470K               292K         12.71     4.61         |  160.9
+   moderate        0.242       10.69              37.0          606K               120K          3.87     3.02         |   66.4
+   optimistic      0.242       13.78              28.7          470K                93K          3.10     2.50         |   51.5
+   conservative    0.186        3.39             116.7         1912K               379K         14.60     4.85         |  209.4
+   moderate        0.186        8.22              48.1          789K               157K          4.12     3.21         |   86.4
+   optimistic      0.186       10.60              37.3          612K               121K          3.31     2.67         |   67.0
+
+F. Communication counted twice (ref [31], Table 2: 43.3% with no communication; 41.4 / 37.1 / 36.0% with it)
+   conservative  as printed  6.93   local 0.433 x eta_coop  7.89 (x1.139)   0.38 end-to-end, no eta_coop  7.70 (x1.111)
+   moderate      as printed 16.79   local 0.433 x eta_coop 19.13 (x1.139)   0.38 end-to-end, no eta_coop 18.05 (x1.075)
+   optimistic    as printed 21.65   local 0.433 x eta_coop 24.66 (x1.139)   0.38 end-to-end, no eta_coop 23.27 (x1.075)
+
+G. Single-node model size at 10-12 bytes per parameter (8-bit optimizers, Section 3.5)
+     24 GB:   2.0B -   2.4B parameters
+     32 GB:   2.7B -   3.2B parameters
+    128 GB:  10.7B -  12.8B parameters
+    512 GB:  42.7B -  51.2B parameters
+
+H. eta_coop for one device at effective throughput (165 x 0.38 TFLOPS), 1B parameters, FP16, 58 Mbit/s upload
+   batch  524288 tokens: H=500 0.978   H=30 0.732   | with 50x compression: H=500 1.000   H=30 0.993
+   batch  131072 tokens: H=500 0.919   H=30 0.405   | with 50x compression: H=500 0.998   H=30 0.972
+   batch   65536 tokens: H=500 0.850   H=30 0.254   | with 50x compression: H=500 0.996   H=30 0.945
+   batch   16384 tokens: H=500 0.587   H=30 0.079   | with 50x compression: H=500 0.986   H=30 0.810
+   tokens per device between synchronizations needed for eta >= 0.9: 5.19e+07
+   tokens per device between synchronizations needed for eta >= 0.93: 7.66e+07
+
+I. Monte-Carlo, 200,000 draws: crossing year against a 16,384-H100 cluster, refreshed (as Section 6.6) and physically fixed
+   case                               refreshed: median  [5th, 95th]  after ramp | physical: median  [5th, 95th]  mean  after ramp
+   as sampled in Section 6.6           3.94  [3.18, 5.19]   5.7%   |   3.04  [2.54, 3.69]  3.07   0.0%
+     physical comparator: R^2 of the linear fit 0.990; membership share of explained variance 77%
+   eta_local ~ U(0.186, 0.242)         4.42  [3.59, 8.69]  24.5%   |   3.41  [2.87, 4.13]  3.44   0.0%
+   chip ratio 11 in place of 6         4.53  [3.68, 9.52]  29.3%   |   3.50  [2.94, 4.23]  3.53   0.0%
+   both                                5.12  [4.10, 13.03]  50.8%   |   3.87  [3.27, 4.66]  3.91   0.3%
+
+CHECK
+  OK   physical crossing, 16,384 H100                script 4.193   expected 4.19
+  OK   physical crossing, 16,384 H100                script 2.687   expected 2.69
+  OK   physical crossing, 16,384 H100                script 2.203   expected 2.2
+  OK   era-normalized crossing, 16,384 H100          script 9.485   expected 9.49
+  OK   era-normalized crossing, 16,384 H100          script 3.448   expected 3.45
+  OK   era-normalized crossing, 16,384 H100          script 2.735   expected 2.73
+  OK   experiment q at 64 replicas (iid)             script 0.0894   expected 0.089
+  OK   law q at 100 replicas                         script 0.3436   expected 0.34
+  OK   tokens processed, 20 x 1, 3B                  script 1.527e+11   expected 1.53e+11
+  OK   3B from scratch at 20 tokens/parameter        script 1.08e+21   expected 1.08e+21
+  OK   5B from scratch at 20 tokens/parameter        script 3e+21   expected 3e+21
+  OK   eta_coop, 16,384-token batch, H=500           script 0.5869   expected 0.587
+  OK   eta_coop, 16,384-token batch, H=30            script 0.07855   expected 0.079
+  OK   MC refreshed median (Section 6.6)             script 3.935   expected 3.9
+
+14 of 14 checks pass; 0 differ.

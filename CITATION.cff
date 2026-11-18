@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Distributed Compute Sufficiency: Aggregate Abundance and Single-Run Scarcity in Volunteer AI Training"
+type: software
+authors:
+  - family-names: Insite
+    given-names: R.
+version: "6.0"
+license:
+  - MIT
+  - CC-BY-4.0
+repository-code: "https://github.com/AJ-FYC/distributed-compute-sufficiency"
+url: "https://aj-fyc.github.io/distributed-compute-sufficiency/"
+abstract: "A model of when volunteers who pool consumer GPUs have enough compute for a given AI training task. It keeps apart the compute a pool holds, the compute one training run can use, and parity with a datacenter, with the code that reproduces the paper's tables and an interactive explorer."
+keywords:
+  - distributed training
+  - decentralized AI
+  - volunteer computing
+  - DiLoCo
+  - scaling laws
+  - consumer GPUs
+  - open-source AI
+  - compute governance
+preferred-citation:
+  type: report
+  title: "Distributed Compute Sufficiency: Aggregate Abundance and Single-Run Scarcity in Volunteer AI Training"
+  authors:
+    - family-names: Insite
+      given-names: R.
+  year: 2026
+  month: 11
+  notes: "Working paper, version 6.0. Not peer-reviewed."

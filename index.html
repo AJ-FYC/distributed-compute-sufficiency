@@ -1,0 +1,279 @@
+<!doctype html>
+<!-- Explorer for the working paper "Distributed Compute Sufficiency" (R. Insite, V6.0, November 2026).
+     Equation 29a: usable compute of one run = m x s x (e_member / q) x q_rep(m) x T.
+     Middle scenario (paper Table 12 and Table 13): 100-TFLOPS cards, half duty, 0.38 local utilisation, 0.93 communication efficiency.
+     Law reading: q_rep(m) = m^-0.232, so m copies are worth m^0.768 single-run copies.
+     Plateau reading: worth = min(m^0.768, 5.7), as in the one experiment that reached 64 copies.
+     Checks against the paper (Table 18): 2 machines cover 1.8e20 in 90 days; 15 machines cover 1.08e21 in 90 days on the law,
+     about 124 days on the plateau; 1,000 copies of 8 reach 7.2e23 in about 293 days on the law.
+     Code MIT, text CC BY 4.0. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Run, Many Machines</title>
+<meta name="description" content="Can home GPUs train AI together? Choose how many machines and copies one decentralized training run uses, and see what it can train. From the working paper Distributed Compute Sufficiency by R. Insite.">
+<meta name="keywords" content="decentralized AI training, distributed training, volunteer computing, home GPUs, consumer GPUs, DiLoCo, open-source AI, AI ownership, compute">
+<meta name="author" content="R. Insite">
+<meta property="og:type" content="website">
+<meta property="og:title" content="One run, many machines: what home GPUs can train together">
+<meta property="og:description" content="An explorer for the working paper Distributed Compute Sufficiency: how much of a pool of home graphics cards one training run can use, and what that is enough for.">
+<meta property="og:image" content="https://aj-fyc.github.io/distributed-compute-sufficiency/social.jpg">
+<meta property="og:url" content="https://aj-fyc.github.io/distributed-compute-sufficiency/">
+<link rel="canonical" href="https://aj-fyc.github.io/distributed-compute-sufficiency/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fcfcfb; --card: #ffffff; --ink: #1d1d1f; --body: #3d4148; --grey: #5b5f66; --grey-l: #8a8f96; --rule: #e6e4de;
+    --navy: #101b2c; --orange: #f0763d; --odark: #c4521f; --otint: #fde5d9; --blue: #2f7be0; --blue-l: #5aa2f0; --btint: #e4effd;
+    --warm: #f3f1ea;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Helvetica;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.5;
+         -webkit-font-smoothing: antialiased; }
+  main { max-width: 760px; margin: 0 auto; padding: 36px 16px 64px; }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--odark); }
+  h1 { font-size: 38px; line-height: 1.08; letter-spacing: -.025em; font-weight: 800; margin: 8px 0 10px; }
+  .lede { color: var(--body); margin: 0 0 22px; font-size: 18px; }
+  .panel { background: var(--card); border: 1px solid var(--rule); border-radius: 18px; padding: 22px 22px 20px; box-shadow: 0 10px 30px rgba(16,27,44,.06); }
+  .panel + .panel { margin-top: 16px; }
+  .ctrl { margin: 0 0 18px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .lab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-weight: 700; font-size: 15px; color: var(--body); margin-bottom: 8px; }
+  .val { font-size: 26px; font-weight: 800; color: var(--navy); letter-spacing: -.02em; }
+  input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 34px; background: transparent; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 10px; border-radius: 6px; background: var(--track); }
+  input[type=range]::-moz-range-track { height: 10px; border-radius: 6px; background: var(--track); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -8px; border-radius: 50%;
+     background: var(--orange); border: 4px solid #fff; box-shadow: 0 1px 6px rgba(16,27,44,.35); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--orange); border: 4px solid #fff; box-shadow: 0 1px 6px rgba(16,27,44,.35); cursor: pointer; }
+  input[type=range]:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; border-radius: 8px; }
+  .ticks { position: relative; height: 18px; font-size: 12.5px; color: var(--grey-l); margin-top: 2px; }
+  .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .ticks .nm { color: var(--grey-l); font-style: italic; transform: none; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--warm); padding: 5px; border-radius: 12px; }
+  .seg button { font: inherit; font-size: 14.5px; font-weight: 600; color: var(--body); background: transparent; border: 0; border-radius: 9px;
+     padding: 9px 10px; cursor: pointer; line-height: 1.25; }
+  .seg button[aria-pressed=true] { background: var(--navy); color: #f3f1ea; }
+  .seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .hint { font-size: 13.5px; color: var(--grey); margin-top: 6px; }
+  .out { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--warm); border-radius: 12px; padding: 12px 12px 10px; }
+  .stat b { display: block; font-size: 25px; font-weight: 800; letter-spacing: -.02em; color: var(--navy); line-height: 1.1; }
+  .stat small { display: block; font-size: 13px; color: var(--grey); margin-top: 3px; }
+  .stat.hot b { color: var(--odark); }
+  .warn { display: none; background: var(--otint); color: var(--odark); border-radius: 12px; padding: 10px 14px; font-size: 14.5px; font-weight: 600; margin-bottom: 14px; }
+  .warn.on { display: block; }
+  .field { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 12px; background: var(--navy); }
+  .cap { font-size: 13.5px; color: var(--grey); }
+  .cap i { font-style: normal; color: var(--odark); font-weight: 700; }
+  h2 { font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--grey); margin: 0 0 10px; }
+  .tasks { list-style: none; margin: 0; padding: 0; }
+  .tasks li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--rule); }
+  .tasks li:first-child { border-top: 0; }
+  .tasks .t { font-weight: 600; font-size: 15.5px; line-height: 1.3; }
+  .tasks .t small { display: block; font-weight: 400; color: var(--grey); font-size: 13px; }
+  .chip { font-weight: 800; font-size: 14.5px; border-radius: 999px; padding: 6px 12px; white-space: nowrap; text-align: center; min-width: 110px; }
+  .chip.ok { background: var(--btint); color: #1f63c0; }
+  .chip.soon { background: #fff1d6; color: #9a5b00; }
+  .chip.far { background: var(--otint); color: var(--odark); }
+  footer { margin-top: 22px; font-size: 13.5px; color: var(--grey); }
+  footer a { color: var(--odark); }
+  .brand { margin-top: 18px; display: flex; align-items: center; gap: 12px; color: var(--grey-l); font-size: 13px; }
+  .brand svg { height: 22px; width: auto; }
+  .gifbar { display: none; }
+  body.gif main { padding-top: 18px; padding-bottom: 18px; }
+  body.gif .lede, body.gif .nogif, body.gif footer { display: none; }
+  body.gif h1 { font-size: 30px; margin-bottom: 14px; }
+  body.gif .gifbar { display: inline-block; font-size: 14px; font-weight: 700; color: #f3f1ea; background: var(--navy); border-radius: 999px; padding: 6px 12px; margin-bottom: 12px; }
+  body.gif .tasks li { padding: 8px 0; }
+  @media (max-width: 560px) {
+    h1 { font-size: 30px; }
+    .out { grid-template-columns: 1fr 1fr; }
+    .out .stat:last-child { grid-column: 1 / -1; }
+    .panel { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">Distributed Compute Sufficiency · explorer</div>
+  <h1>One run, many machines</h1>
+  <p class="lede">A pool of home graphics cards holds a lot of compute. One training run can use only the machines inside it, and each copy of the model you add is worth less than the last. Move the slider and see what one run can train.</p>
+
+  <section class="panel" aria-label="Choices">
+    <div class="ctrl">
+      <div class="lab"><label for="m">Copies of the model in one run</label><span class="val" id="mv">16</span></div>
+      <input id="m" type="range" min="0" max="1000" step="1" value="401" aria-describedby="mh">
+      <div class="ticks" aria-hidden="true" id="ticks"></div>
+      <div class="hint" id="mh">Copies have to keep agreeing with one another. Nobody has run more than 64.</div>
+    </div>
+    <div class="ctrl nogif">
+      <div class="lab">Machines in each copy</div>
+      <div class="seg" role="group" aria-label="Machines in each copy">
+        <button type="button" data-k="s" data-v="1" aria-pressed="true">One home card</button>
+        <button type="button" data-k="s" data-v="8" aria-pressed="false">Eight cards in one place</button>
+      </div>
+    </div>
+    <div class="ctrl nogif">
+      <div class="lab">What each added copy is worth</div>
+      <div class="seg" role="group" aria-label="Reading">
+        <button type="button" data-k="r" data-v="law" aria-pressed="true">The law: keeps growing</button>
+        <button type="button" data-k="r" data-v="plateau" aria-pressed="false">The plateau: flattens near 6</button>
+      </div>
+      <div class="hint">A law fitted on larger models (2025), or the one experiment that went to 64 copies (2023). Neither is a forecast.</div>
+    </div>
+    <div class="ctrl nogif">
+      <div class="lab">How hard home machines work</div>
+      <div class="seg" role="group" aria-label="Utilisation">
+        <button type="button" data-k="u" data-v="0.38" aria-pressed="true">As the paper assumes</button>
+        <button type="button" data-k="u" data-v="0.242" aria-pressed="false">As measured on a home fleet</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-live="polite">
+    <div class="gifbar" id="gifbar"></div>
+    <div class="warn" id="warn">Past 64 copies nobody has measured anything. From here on these numbers are a bracket, not a forecast.</div>
+    <div class="out">
+      <div class="stat"><b id="o-mach">16</b><small>machines in this run</small></div>
+      <div class="stat"><b id="o-worth">5.4</b><small>worth, in single-run copies</small></div>
+      <div class="stat hot"><b id="o-flop">7 × 10²⁰</b><small>operations in 90 days</small></div>
+    </div>
+    <div class="field">
+      <canvas id="dots" width="1200" height="600" role="img" aria-label="Ten thousand dots, one per member machine; the ones in this run are orange."></canvas>
+      <div class="cap" id="dcap">Each dot is one member's machine in a pool of 10,000, the paper's starting point. <i>Orange: this run.</i></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>What this run is enough for</h2>
+    <ul class="tasks" id="tasks"></ul>
+  </section>
+
+  <footer>
+    <p>From Equation 29a and Table 14a of the working paper <em>Distributed Compute Sufficiency: Aggregate Abundance and Single-Run Scarcity in Volunteer AI Training</em> (V6.0, November 2026), middle scenario: cards of about 100 TFLOPS running half the time. One 90-day run. The tasks are the paper's own (Table 18). Neither reading is a forecast, and the paper is not yet peer-reviewed.</p>
+    <p><a id="l-essay" href="https://rinsite.substack.com/">The essay</a> · <a id="l-paper" href="paper/distributed-compute-sufficiency-working-paper.pdf">The working paper</a> · <a id="l-code" href="https://github.com/AJ-FYC/distributed-compute-sufficiency">The code</a></p>
+    <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="40 30 1545 330" font-family="Inter, sans-serif" font-weight="800" fill="#1d1d1f" aria-label="R. Insite"><text x="59" y="339" font-size="411" textLength="245" lengthAdjust="spacingAndGlyphs">R</text><text x="509" y="339" font-size="411" textLength="72" lengthAdjust="spacingAndGlyphs">I</text><text x="620" y="339" font-size="411" textLength="209" lengthAdjust="spacingAndGlyphs">n</text><text x="858" y="339" font-size="411" textLength="203" lengthAdjust="spacingAndGlyphs">s</text><text x="1182" y="339" font-size="411" textLength="149" lengthAdjust="spacingAndGlyphs">t</text><text x="1350" y="339" font-size="411" textLength="216" lengthAdjust="spacingAndGlyphs">e</text><polygon points="326,274 390,274 326,338" fill="#f0763d"/><polygon points="1090,189 1158,121 1158,339 1090,339" fill="#5aa2f0"/><polygon points="1090,103 1157,103 1090,170" fill="#f0763d"/></svg><span>Code MIT · text CC BY 4.0</span></div>
+  </footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  // Middle scenario, per member, before the quality factor: delta x P x eta_local x eta_coop x T  (paper Tables 12-13)
+  var T90 = 90 * 86400;
+  function e90(util) { return 0.5 * 100e12 * util * 0.93 * T90; }
+  var TASKS = [   // paper Table 18
+    { name: "Keep training a 3B model on 10 billion tokens", note: "an existing small model", flop: 1.8e20 },
+    { name: "Train a 3B model from scratch", note: "20 tokens per parameter", flop: 1.08e21 },
+    { name: "Keep training a 3B model on 100 billion tokens", note: "an existing small model", flop: 1.8e21 },
+    { name: "A Llama 3 8B-class training budget", note: "15 trillion tokens", flop: 7.2e23 },
+    { name: "A large frontier run", note: "10²⁵ operations", flop: 1e25 }
+  ];
+  var state = { m: 16, s: 1, r: "law", u: 0.38 };
+  var slider = document.getElementById("m");
+  var NM = Math.log10(64) / 3;   // where 64 sits on the track
+
+  function posToM(p) { return Math.max(1, Math.round(Math.pow(10, 3 * p / 1000))); }
+  function mToPos(m) { return Math.round(1000 * Math.log10(m) / 3); }
+  function worth(m, r) { var w = Math.pow(m, 0.768); return r === "plateau" ? Math.min(w, 5.7) : w; }
+
+  function sci(x) {
+    var e = Math.floor(Math.log10(x)), mnt = x / Math.pow(10, e);
+    var sup = String(e).split("").map(function (d) { return "⁰¹²³⁴⁵⁶⁷⁸⁹"[+d]; }).join("");
+    var mtxt = mnt.toFixed(1).replace(/\.0$/, "");
+    return (mtxt === "1" ? "" : mtxt + " × ") + "10" + sup;
+  }
+  function fmtN(x) { return Math.round(x).toLocaleString("en-US"); }
+  function span(days) {
+    if (days <= 90) { var d = Math.max(1, Math.round(days)); return { t: "✓ " + d + (d === 1 ? " day" : " days"), c: "ok" }; }
+    if (days <= 365) return { t: Math.round(days / 30.4) + " months", c: "soon" };
+    var y = days / 365.25;
+    if (y < 10) return { t: y.toFixed(1) + " years", c: "far" };
+    if (y < 1e6) return { t: fmtN(y) + " years", c: "far" };
+    return { t: "over a million years", c: "far" };
+  }
+
+  function drawTicks() {
+    var t = document.getElementById("ticks"), html = "";
+    [1, 8, 64, 1000].forEach(function (m) {
+      var left = 100 * Math.log10(m) / 3, tr = m === 1 ? "translateX(0)" : (m === 1000 ? "translateX(-100%)" : "translateX(-50%)");
+      html += '<span style="left:' + left + '%;transform:' + tr + '">' + fmtN(m) + "</span>";
+    });
+    html += '<span class="nm" style="left:' + (100 * NM + 6).toFixed(1) + '%">never measured</span>';
+    t.innerHTML = html;
+    var a = (100 * NM).toFixed(1);
+    slider.style.setProperty("--track",
+      "linear-gradient(90deg, #5aa2f0 0%, #2f7be0 " + a + "%, #d9d6cf " + a + "%, #d9d6cf 100%)");
+  }
+
+  // a fixed, shuffled order so the run's machines are scattered across the pool
+  var N = 10000, order = [];
+  (function () { for (var i = 0; i < N; i++) order.push(i); var seed = 7;
+    function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+    for (var j = N - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var tmp = order[j]; order[j] = order[k]; order[k] = tmp; } })();
+
+  function drawDots(lit) {
+    var c = document.getElementById("dots"), g = c.getContext("2d");
+    var cols = document.body.classList.contains("gif") ? 200 : 125, rows = Math.ceil(N / cols), sp = c.width / cols, r = sp * 0.34;
+    c.height = Math.round(rows * sp);
+    g.fillStyle = "#101b2c"; g.fillRect(0, 0, c.width, c.height);
+    var on = new Uint8Array(N);
+    for (var i = 0; i < Math.min(lit, N); i++) on[order[i]] = 1;
+    for (var n = 0; n < N; n++) {
+      var x = (n % cols) * sp + sp, y = Math.floor(n / cols) * sp + sp;
+      g.beginPath(); g.arc(x - sp / 2, y - sp / 2, on[n] ? r * 1.3 : r, 0, 6.2832);
+      g.fillStyle = on[n] ? "#f0763d" : "rgba(90,162,240,0.55)"; g.fill();
+    }
+  }
+
+  function render() {
+    var m = state.m, s = state.s, mach = m * s, w = worth(m, state.r);
+    var usable = s * e90(state.u) * w;
+    document.getElementById("mv").textContent = fmtN(m);
+    document.getElementById("o-mach").textContent = fmtN(mach);
+    document.getElementById("o-worth").textContent = w < 10 ? w.toFixed(1) : fmtN(w);
+    document.getElementById("o-flop").textContent = sci(usable);
+    document.getElementById("warn").classList.toggle("on", m > 64);
+    document.getElementById("gifbar").textContent = state.r === "law" ? "Reading: the law (keeps growing)" : "Reading: the plateau (flattens near 6)";
+    var others = Math.floor(N / mach) - 1;
+    document.getElementById("dcap").innerHTML = "Each dot is one member's machine in a pool of 10,000, the paper's starting point. <i>Orange: this run.</i> " +
+      (others > 0 ? "The rest could run " + fmtN(others) + " more like it at the same time." : "");
+    var ul = document.getElementById("tasks"), html = "";
+    TASKS.forEach(function (t) {
+      var days = 90 * t.flop / usable, sp = span(days);
+      html += '<li><div class="t">' + t.name + "<small>" + t.note + '</small></div><div class="chip ' + sp.c + '">' + sp.t + "</div></li>";
+    });
+    ul.innerHTML = html;
+    drawDots(mach);
+  }
+
+  slider.addEventListener("input", function () { state.m = posToM(+slider.value); render(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+    b.addEventListener("click", function () {
+      var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+      state[k] = (k === "r") ? v : +v;
+      Array.prototype.forEach.call(b.parentNode.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      render();
+    });
+  });
+  // exposed for the recording script and for checks
+  window.explorer = { set: function (o) { for (var k in o) state[k] = o[k]; slider.value = mToPos(state.m);
+      Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (x) {
+        var k = x.getAttribute("data-k"), v = x.getAttribute("data-v"); x.setAttribute("aria-pressed", String(String(state[k]) === v)); });
+      render(); },
+    usable: function (m, s, r, u) { return s * e90(u) * worth(m, r); } };
+  if (location.hash === "#gif") document.body.classList.add("gif");
+  drawTicks();
+  slider.value = mToPos(state.m);
+  render();
+})();
+</script>
+</body>
+</html>

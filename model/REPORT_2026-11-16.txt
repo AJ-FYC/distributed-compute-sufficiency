@@ -1,0 +1,141 @@
+DISTRIBUTED COMPUTE SUFFICIENCY -- model report (rebuilt from the 2026-11-01 draft)
+
+Eq. 24 example (16,384 H100 against RTX-4090-class devices at half duty)
+  with R_perf = 6 exactly, as printed: 234,245 members    with 989/165: 234,009
+  at the measured consumer utilization 0.242: 367,823
+
+Table 13 -- per-member effective compute
+  conservative e_member = 6.93 TFLOPS   members per H100-equivalent = 57.1
+  moderate     e_member = 16.79 TFLOPS   members per H100-equivalent = 23.6
+  optimistic   e_member = 21.65 TFLOPS   members per H100-equivalent = 18.3
+  moderate fleet against 16,384 H100: 386,114 members
+
+Table 14 -- membership and H100-equivalents by year
+  t= 1  cons M=    21,867 N_eq=      383   mode M=    28,854 N_eq=    1,224   opti M=    34,657 N_eq=    1,896
+  t= 2  cons M=    47,818 N_eq=      837   mode M=    83,255 N_eq=    3,533   opti M=   120,112 N_eq=    6,572
+  t= 3  cons M=   104,564 N_eq=    1,831   mode M=   240,225 N_eq=   10,193   opti M=   416,277 N_eq=   22,777
+  t= 4  cons M=   228,653 N_eq=    4,003   mode M=   693,145 N_eq=   29,412   opti M= 1,442,700 N_eq=   78,939
+  t= 5  cons M=   500,000 N_eq=    8,753   mode M= 2,000,000 N_eq=   84,866   opti M= 5,000,000 N_eq=  273,581
+  t= 7  cons M=   661,250 N_eq=   11,576   mode M= 2,645,000 N_eq=  112,235   opti M= 6,612,500 N_eq=  361,811
+  t=10  cons M= 1,005,679 N_eq=   17,606   mode M= 4,022,714 N_eq=  170,696   opti M=10,056,786 N_eq=  550,270
+
+Table 15 -- total FLOP of a 90-day run at t = 5 (aggregate)
+  conservative 2.69e+25 FLOP
+  moderate     2.61e+26 FLOP
+  optimistic   8.42e+26 FLOP
+
+Table 18 -- members required and the year reached
+  practical sufficiency, 1e25 FLOP in 90 days     185,692 at t*=3.73 |    76,610 at t*=1.92 |    59,412 at t*=1.43
+  Llama-3-8B-class budget, 7.2e23 FLOP             13,370 at t*=0.37 |     5,516 at t*=0.00 |     4,278 at t*=0.00
+  fixed 2,000-GPU cluster                         114,244 at t*=3.11 |    47,133 at t*=1.46 |    36,552 at t*=1.04
+  Llama 3 405B budget, 3.8e25 FLOP                705,629 at t*=7.46 |   291,117 at t*=3.18 |   225,764 at t*=2.51
+  fixed 16,384-GPU cluster                        935,891 at t*=9.49 |   386,114 at t*=3.45 |   299,436 at t*=2.73
+
+Table 14a -- what ONE 90-day run can use under a replica cap (FLOP; cons / mod / opt)
+  8 x 1   (validated replica count) [added]    4.3e+20 / 1.0e+21 / 1.3e+21   days to 7.2e23 (moderate): 62,054
+  20 x 1  (peers in the 72B run) [added]       1.1e+21 / 2.6e+21 / 3.4e+21   days to 7.2e23 (moderate): 24,822
+  100 x 1                                      5.4e+21 / 1.3e+22 / 1.7e+22   days to 7.2e23 (moderate): 4,964
+  1,000 x 1                                    5.4e+22 / 1.3e+23 / 1.7e+23   days to 7.2e23 (moderate): 496
+  100 x 8                                      4.3e+22 / 1.0e+23 / 1.3e+23   days to 7.2e23 (moderate): 621
+  1,000 x 8                                    4.3e+23 / 1.0e+24 / 1.3e+24   days to 7.2e23 (moderate): 62
+  members that ONE run would have to synchronize to match the 16,384-H100 cluster (moderate): 386,114
+  -> under any replica cap below that, the single-run crossover does not exist, whatever the membership.
+
+Table 20 -- crossover year against a 16,384-H100 cluster growing at g per year (R_eq moderate)
+  g=1.00   4.7       4.0       3.4       2.9       2.6     
+  g=1.05   5.0       4.2       3.6       3.1       2.7     
+  g=1.10   9.9       4.4       3.8       3.2       2.8     
+  g=1.15     ---     4.7       4.0       3.3       2.9     
+  g=1.50     ---       ---       ---    4.4- 7.0  3.7- 9.6 
+  g=2.00     ---       ---       ---       ---       ---   
+  (--- = no crossover within the 40-year scan; not a proof that none occurs later)
+
+Monte-Carlo, Section 6.6 as written (200,000 draws; fixed seed; standard library RNG, so not the draft's stream)
+  crossover year vs fixed 16,384 H100: median 3.94  90% interval [3.18, 5.19]  mean 4.06
+  R_eq 5th-95th percentile: [22.9, 47.8]   moderate point value: 23.6
+  linear-model R^2: 0.837
+  share of explained variance: ln M5 81%, delta 8%, P_consumer 4%, eta_dc 4%, eta_local 3%, q 0%, eta_coop 0%
+  squared standardized coefficient of ln M5 (share of total variance): 0.68
+  sustained parity, g_chips ~ Tri(1.0,1.3,1.8) vs g_M ~ U(1.10,1.30): 18.1% of draws
+
+Cases the draft names and did not run (same sampler; each changes ONE thing)
+  eta_local ~ U(0.186, 0.242), the range measured on a consumer-majority fleet: median 4.42  90% [3.59, 8.69]  R_eq [38, 78]
+  chip ratio 11 instead of 6 (current-generation datacenter chip vs consumer flagship): median 4.53  90% [3.68, 9.52]  R_eq [42, 88]
+  both together: median 5.12  90% [4.10, 13.03]  R_eq [69, 143]
+    share of draws crossing after the five-year ramp (as written): 6%
+    share of draws crossing after the five-year ramp (measured utilization): 24%
+    share of draws crossing after the five-year ramp (chip ratio 11): 29%
+    share of draws crossing after the five-year ramp (both): 51%
+
+What a capped run buys for continuing the training of an existing model (D = C / 6N; moderate; 90 days)
+  8 x 1      usable 1.04e+21 FLOP   3B model: 5.80e+10 tokens   5B model: 3.48e+10 tokens
+  20 x 1     usable 2.61e+21 FLOP   3B model: 1.45e+11 tokens   5B model: 8.70e+10 tokens
+  100 x 1    usable 1.31e+22 FLOP   3B model: 7.25e+11 tokens   5B model: 4.35e+11 tokens
+  1,000 x 1  usable 1.31e+23 FLOP   3B model: 7.25e+12 tokens   5B model: 4.35e+12 tokens
+  from-scratch budgets in the draft: 3B on 15T tokens = 2.7e+23 FLOP; 5B on 30T tokens = 9.0e+23 FLOP
+
+CHECK against the draft's printed values
+  OK   Eq. 24: 234,000 members                                 script 2.342e+05   printed 2.34e+05
+  OK   368,000 at eta_local 0.242                              script 3.678e+05   printed 3.68e+05
+  OK   Table 13 e_member conservative                          script 6.926   printed 6.9
+  OK   Table 13 R_eq conservative                              script 57.12   printed 57.1
+  OK   Table 13 e_member moderate                              script 16.79   printed 16.8
+  OK   Table 13 R_eq moderate                                  script 23.57   printed 23.6
+  OK   Table 13 e_member optimistic                            script 21.65   printed 21.6
+  OK   Table 13 R_eq optimistic                                script 18.28   printed 18.3
+  OK   387,000 at the moderate fleet                           script 3.861e+05   printed 3.87e+05
+  OK   26 million vs 1.1M H100-equivalents                     script 2.592e+07   printed 2.6e+07
+  OK   Table 14 moderate N_equiv at t=5                        script 8.487e+04   printed 8.47e+04
+  OK   Table 14 conservative M at t=1                          script 2.187e+04   printed 2.2e+04
+  OK   Table 15 conservative                                   script 2.693e+25   printed 2.7e+25
+  OK   Table 15 moderate                                       script 2.611e+26   printed 2.6e+26
+  OK   Table 15 optimistic                                     script 8.416e+26   printed 8.4e+26
+  OK   Table 18 members practical sufficiency, 1e25 FLOP in 90 days conservative script 1.857e+05   printed 1.86e+05
+  OK   Table 18 t* practical sufficiency, 1e25 FLOP in 90 days conservative script 3.734   printed 3.73
+  OK   Table 18 members practical sufficiency, 1e25 FLOP in 90 days moderate script 7.661e+04   printed 7.7e+04
+  OK   Table 18 t* practical sufficiency, 1e25 FLOP in 90 days moderate script 1.921   printed 1.92
+  OK   Table 18 members practical sufficiency, 1e25 FLOP in 90 days optimistic script 5.941e+04   printed 5.9e+04
+  OK   Table 18 t* practical sufficiency, 1e25 FLOP in 90 days optimistic script 1.434   printed 1.43
+  OK   Table 18 members Llama-3-8B-class budget, 7.2e23 FLOP conservative script 1.337e+04   printed 1.34e+04
+  OK   Table 18 members Llama-3-8B-class budget, 7.2e23 FLOP moderate script 5516   printed 5500
+  OK   Table 18 members Llama-3-8B-class budget, 7.2e23 FLOP optimistic script 4278   printed 4300
+  OK   Table 18 members fixed 2,000-GPU cluster conservative   script 1.142e+05   printed 1.14e+05
+  OK   Table 18 t* fixed 2,000-GPU cluster conservative        script 3.113   printed 3.11
+  OK   Table 18 members fixed 2,000-GPU cluster moderate       script 4.713e+04   printed 4.7e+04
+  OK   Table 18 t* fixed 2,000-GPU cluster moderate            script 1.463   printed 1.46
+  OK   Table 18 members fixed 2,000-GPU cluster optimistic     script 3.655e+04   printed 3.7e+04
+  OK   Table 18 t* fixed 2,000-GPU cluster optimistic          script 1.043   printed 1.04
+  OK   Table 18 members Llama 3 405B budget, 3.8e25 FLOP conservative script 7.056e+05   printed 7.06e+05
+  OK   Table 18 t* Llama 3 405B budget, 3.8e25 FLOP conservative script 7.465   printed 7.46
+  OK   Table 18 members Llama 3 405B budget, 3.8e25 FLOP moderate script 2.911e+05   printed 2.91e+05
+  OK   Table 18 t* Llama 3 405B budget, 3.8e25 FLOP moderate   script 3.181   printed 3.18
+  OK   Table 18 members Llama 3 405B budget, 3.8e25 FLOP optimistic script 2.258e+05   printed 2.26e+05
+  OK   Table 18 t* Llama 3 405B budget, 3.8e25 FLOP optimistic script 2.508   printed 2.51
+  OK   Table 18 members fixed 16,384-GPU cluster conservative  script 9.359e+05   printed 9.36e+05
+  OK   Table 18 t* fixed 16,384-GPU cluster conservative       script 9.485   printed 9.49
+  OK   Table 18 members fixed 16,384-GPU cluster moderate      script 3.861e+05   printed 3.86e+05
+  OK   Table 18 t* fixed 16,384-GPU cluster moderate           script 3.448   printed 3.45
+  OK   Table 18 members fixed 16,384-GPU cluster optimistic    script 2.994e+05   printed 2.99e+05
+  OK   Table 18 t* fixed 16,384-GPU cluster optimistic         script 2.735   printed 2.73
+  OK   Table 14a 100x1 moderate                                script 1.305e+22   printed 1.3e+22
+  OK   Table 14a 1,000x8 optimistic                            script 1.347e+24   printed 1.3e+24
+  OK   Table 14a days to 7.2e23 at 100x1                       script 4964   printed 5000
+  OK   Table 20 g=1.0 M5=5e+05                                 script 4.67   printed 4.7
+  OK   Table 20 g=1.0 M5=2e+06                                 script 3.448   printed 3.4
+  OK   Table 20 g=1.1 M5=5e+05                                 script 9.906   printed 9.9
+  OK   Table 20 g=1.15 M5=1e+06                                script 4.677   printed 4.7
+  OK   Table 20 g=1.5 M5=5e+06                                 script 4.363   printed 4.4
+  OK   Table 20 g=1.5 M5=1e+07                                 script 3.744   printed 3.7
+  OK   Table 20 reversion g=1.5 M5=5M                          script 7.009   printed 7
+  OK   Table 20 reversion g=1.5 M5=10M                         script 9.618   printed 9.6
+  OK   MC median                                               script 3.935   printed 3.9
+  OK   MC 5th percentile                                       script 3.177   printed 3.2
+  OK   MC 95th percentile                                      script 5.186   printed 5.2
+  OK   MC mean                                                 script 4.057   printed 4.1
+  OK   MC R^2                                                  script 0.8375   printed 0.84
+  OK   MC membership share                                     script 0.8092   printed 0.81
+  OK   MC parity probability                                   script 0.1806   printed 0.18
+  OK   MC R_eq 5th                                             script 22.85   printed 23
+  OK   MC R_eq 95th                                            script 47.78   printed 48
+
+62 of 62 printed values reproduced within tolerance; 0 differ.
